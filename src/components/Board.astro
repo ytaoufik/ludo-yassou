@@ -1,0 +1,455 @@
+---
+/**
+ * Board Component
+ * Renders the Ludo board with SVG for crisp, scalable graphics.
+ * The board is a 15x15 grid following official Ludo layout.
+ */
+---
+<div id="game-page" class="page">
+  <div class="game-container">
+    <!-- Top Bar: current player info -->
+    <div class="game-top-bar">
+      <div class="turn-indicator">
+        <span id="turn-dot" class="turn-dot"></span>
+        <span id="turn-text">---</span>
+      </div>
+      <button id="btn-roll-dice" class="roll-btn" disabled>
+        🎲 Lancer le dé
+      </button>
+    </div>
+
+    <!-- Board wrapper -->
+    <div class="board-wrapper">
+      <svg id="ludo-board" viewBox="0 0 750 750" xmlns="http://www.w3.org/2000/svg">
+        <!-- Board will be rendered by JS for clean control -->
+      </svg>
+
+      <!-- Dice overlay -->
+      <div id="dice-container" class="dice-container">
+        <div id="dice" class="dice">
+          <div class="dice-face" id="dice-face">?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player Panel -->
+    <div id="player-panel" class="player-panel">
+      <!-- Player cards rendered by JS -->
+    </div>
+
+    <!-- Game Chat -->
+    <div class="game-chat-toggle">
+      <button id="btn-toggle-chat" class="chat-toggle-btn">💬</button>
+    </div>
+    <div id="game-chat" class="game-chat hidden">
+      <div class="chat-header">
+        <h3>💬 Chat</h3>
+        <button id="btn-close-chat" class="close-chat-btn">✕</button>
+      </div>
+      <div id="game-chat-messages" class="chat-messages"></div>
+      <div class="chat-input-row">
+        <input
+          type="text"
+          id="game-chat-input"
+          placeholder="Écrire un message..."
+          maxlength="200"
+          autocomplete="off"
+        />
+        <button id="game-chat-send" class="chat-send-btn">➤</button>
+      </div>
+    </div>
+
+    <!-- Victory Overlay -->
+    <div id="victory-overlay" class="victory-overlay hidden">
+      <div class="victory-card">
+        <div class="trophy">🏆</div>
+        <h2 id="winner-name">Joueur</h2>
+        <p>a gagné la partie !</p>
+        <div class="victory-actions">
+          <button id="btn-restart" class="btn btn-primary">🔄 Rejouer</button>
+          <button id="btn-back-lobby" class="btn btn-secondary">🏠 Accueil</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+    z-index: 1;
+    position: relative;
+  }
+
+  /* ─── Top Bar ─────────────────────────────────── */
+  .game-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 0.8rem;
+    gap: 1rem;
+  }
+
+  .turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .turn-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    transition: background 0.3s;
+    animation: pulse 1.5s infinite;
+  }
+
+  .roll-btn {
+    background: linear-gradient(135deg, var(--accent), #5a4bd1);
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+  }
+
+  .roll-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(108, 92, 231, 0.5);
+  }
+
+  .roll-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .roll-btn.rolling {
+    animation: shake 0.6s ease;
+  }
+
+  /* ─── Board ───────────────────────────────────── */
+  .board-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 1;
+  }
+
+  #ludo-board {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    background: #1a1a2e;
+  }
+
+  /* ─── Dice ────────────────────────────────────── */
+  .dice-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .dice {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    opacity: 0;
+  }
+
+  .dice.show {
+    opacity: 1;
+  }
+
+  .dice.rolling {
+    animation: shake 0.5s ease;
+  }
+
+  .dice-face {
+    width: 56px;
+    height: 56px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #333;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  /* ─── Player Panel ────────────────────────────── */
+  .player-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+    width: 100%;
+    max-width: 600px;
+    justify-content: center;
+  }
+
+  .player-panel :global(.player-card) {
+    flex: 1;
+    min-width: 120px;
+    max-width: 160px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 0.7rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 2px solid transparent;
+    transition: var(--transition);
+  }
+
+  .player-panel :global(.player-card.active) {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
+  }
+
+  .player-panel :global(.player-card .p-color) {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .player-panel :global(.player-card .p-name) {
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player-panel :global(.player-card .p-tokens) {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+  }
+
+  /* ─── Chat (floating) ─────────────────────────── */
+  .game-chat-toggle {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 20;
+  }
+
+  .chat-toggle-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    font-size: 1.4rem;
+    box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .chat-toggle-btn:hover {
+    transform: scale(1.1);
+  }
+
+  .game-chat {
+    position: fixed;
+    bottom: 5rem;
+    right: 1.5rem;
+    width: 320px;
+    max-width: calc(100vw - 2rem);
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    z-index: 20;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+  }
+
+  .game-chat .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .game-chat .chat-header h3 {
+    font-size: 0.9rem;
+  }
+
+  .close-chat-btn {
+    background: none;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    transition: color 0.2s;
+  }
+
+  .close-chat-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .chat-messages {
+    height: 200px;
+    overflow-y: auto;
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .chat-messages :global(.chat-msg) {
+    font-size: 0.85rem;
+    padding: 0.3rem 0;
+  }
+
+  .chat-messages :global(.chat-msg .chat-name) {
+    font-weight: 600;
+    margin-right: 0.3rem;
+  }
+
+  .chat-messages :global(.chat-msg .chat-text) {
+    color: var(--text-secondary);
+    word-break: break-word;
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .chat-input-row input {
+    flex: 1;
+    padding: 0.5rem 0.8rem;
+    background: var(--bg-dark);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+  }
+
+  .chat-send-btn {
+    background: var(--accent);
+    color: white;
+    border-radius: 10px;
+    padding: 0.5rem 0.8rem;
+    font-size: 1rem;
+    transition: var(--transition);
+  }
+
+  /* ─── Victory Overlay ─────────────────────────── */
+  .victory-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 15, 26, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .victory-card {
+    text-align: center;
+    animation: bounceIn 0.6s ease;
+    background: var(--bg-card);
+    padding: 3rem 2.5rem;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    max-width: 360px;
+    width: 90%;
+  }
+
+  .trophy {
+    font-size: 5rem;
+    animation: float 3s ease-in-out infinite;
+    margin-bottom: 1rem;
+  }
+
+  .victory-card h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .victory-card p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+  }
+
+  .victory-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .victory-actions .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.9rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: var(--transition);
+  }
+
+  .victory-actions .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #5a4bd1);
+    color: white;
+  }
+
+  .victory-actions .btn-secondary {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .page {
+    display: none;
+  }
+
+  .page.active {
+    display: block;
+  }
+
+  @media (max-width: 480px) {
+    .game-container {
+      padding: 0.5rem;
+    }
+    .game-top-bar {
+      font-size: 0.85rem;
+    }
+    .roll-btn {
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+    }
+  }
+</style>

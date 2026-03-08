@@ -1,0 +1,30 @@
+---
+/**
+ * Main Page - Ludo Online
+ * Combines all components and initializes the game client.
+ */
+import Layout from '../layouts/Layout.astro';
+import LandingPage from '../components/LandingPage.astro';
+import RoomLobby from '../components/RoomLobby.astro';
+import Board from '../components/Board.astro';
+---
+
+<Layout title="LUDO Online 🎲">
+  <LandingPage />
+  <RoomLobby />
+  <Board />
+
+  <script>
+    import { initGame } from '../scripts/game-client.js';
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
+
+    // Also handle if DOMContentLoaded already fired
+    if (document.readyState !== 'loading') {
+      initGame();
+    }
+  </script>
+</Layout>
